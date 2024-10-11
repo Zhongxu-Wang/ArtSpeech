@@ -15,4 +15,4 @@ Zhongxu Wang, Yujia Wang, Mingzhu Li, Hua Huang
 </h4>
 </div>
 
-<a href="https://github.com/Zhongxu-Wang/ArtSpeech" target="_blank">ArtSpeech GitHub Repository</a>
+<a href="https://zhongxu-wang.github.io/artspeeech.demopage/" target="_blank">ArtSpeech demopage</a>

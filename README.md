@@ -22,6 +22,3 @@ We devise an articulatory representation-based text-to-speech (TTS) model, ArtSp
 Demo Page: <a href="https://zhongxu-wang.github.io/artspeeech.demopage/" target="_blank">ArtSpeech demopage</a>
 
 Paper Link: <a href="https://openreview.net/forum?id=nagiMHx4A3" target="_blank">OpenReview</a>
-
-## ---
-In the future, we will fix bugs, update the pre-trained models, and update the README.

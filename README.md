@@ -22,3 +22,43 @@ We devise an articulatory representation-based text-to-speech (TTS) model, ArtSp
 Demo Page: <a href="https://zhongxu-wang.github.io/artspeeech.demopage/" target="_blank">ArtSpeech demopage</a>
 
 Paper Link: <a href="https://openreview.net/forum?id=nagiMHx4A3" target="_blank">OpenReview</a>
+
+## Pre-requisites
+
+1. Python >= 3.8
+```bash
+conda create -n ArtSpeech python==3.8.0
+conda activate ArtSpeech
+```
+
+2. Clone this repository:
+```bash
+git clone https://github.com/Zhongxu-Wang/ArtSpeech.git
+cd ArtSpeech
+```
+
+3. Install python requirements.
+```bash
+pip install torchaudio munch torch librosa pyyaml click tqdm attrdict matplotlib tensorboard Cython
+``` 
+
+4. Build Monotonic Alignment Search.
+```bash
+git clone https://github.com/resemble-ai/monotonic_align.git
+cd monotonic_align
+python setup.py install
+```
+
+to be continued ......
+
+## Inference
+
+
+## Training
+
+## Additional Training Data
+
+All results in the paper as well as the pre-trained models provided in the repository were trained using the LJSpeech and LibriTTS datasets.
+However, due to the lack of elderly, children, and emotionally rich data in these two datasets, the trained TTS models performed poorly on some data, so we expanded the datasets.
+Here we publish the multi-age, emotionally richer speech data we collected.
+

@@ -28,13 +28,7 @@ class TextCleaner:
             indexes.append(self.word_index_dictionary[char])
         return indexes
 
-# def load_npy_files(folder_path):
-#     npy_files = {}
-#     for file in os.listdir(folder_path):
-#         if file.endswith('.npy'):
-#             file_path = os.path.join(folder_path, file)
-#             npy_files[file.split(".")[0]] = torch.from_numpy(np.load(file_path))
-#     return npy_files
+
 np.random.seed(1)
 random.seed(1)
 SPECT_PARAMS = {
@@ -57,8 +51,9 @@ def preprocess(wave_tensor):
 class FilePathDataset(torch.utils.data.Dataset):
     def __init__(self,
                  data_list,
+                 dataset_config,
+                 validation = False,
                  sr=24000,
-                 validation=False,
                  ):
 
         spect_params = SPECT_PARAMS
@@ -68,12 +63,9 @@ class FilePathDataset(torch.utils.data.Dataset):
         self.data_list = [data if len(data) == 3 else (*data, 0) for data in _data_list]
         self.text_cleaner = TextCleaner()
         self.sr = sr
+        self.data_path = dataset_config["data_path"]
         self.to_melspec = torchaudio.transforms.MelSpectrogram(**MEL_PARAMS)
 
-        #self.energydir = load_npy_files("../Data/predict/energy/")
-        # self.EMAdir = load_npy_files("../Data/predict/EMA/")
-        # self.F0dir = load_npy_files("../Data/predict/F0/")
-        # print("Finish Loading")
         self.mean, self.std = -4, 4
 
     def __len__(self):
@@ -102,36 +94,24 @@ class FilePathDataset(torch.utils.data.Dataset):
 
     def _load_tensor(self, data):
 
-
         wave_path, text, speaker_id = data
-        Wav_path = os.path.normpath(os.path.join("../Data/", wave_path)).replace("\\", "/")
+        Wav_path = os.path.normpath(os.path.join(self.data_path, wave_path)).replace("\\", "/")
         Path = wave_path.replace("\\", "").replace("/", "").split(".")[0]+".npy"
-        #name = wave_path.split("/")[-1].split(".")[0]+".npy"
-        EMA_path = "../Data/predict/EMA/" + Path
-        F0_path = "../Data/predict/F0/" + Path
-        N_path = "../Data/predict/energy/" + Path
+        EMA_path = self.data_path + "/predict/EMA/" + Path
+        F0_path = self.data_path + "/predict/F0/" + Path
+        N_path = self.data_path + "/predict/energy/" + Path
         speaker_id = int(speaker_id)
-        wave, sr = torchaudio.load(Wav_path)
+        wave, _ = torchaudio.load(Wav_path)
 
         EMA = torch.from_numpy(np.load(EMA_path))
         F0 = torch.from_numpy(np.load(F0_path))
         energy = torch.from_numpy(np.load(N_path))
 
-        # wave_path, text, speaker_id = data
-        # Path = wave_path.replace("\\", "/").split(os.sep)
-        # name = ''.join(Path).split(".")[0]
-        # wave_path = os.path.normpath(os.path.join("../Data/", wave_path)).replace("\\", "/")
-        # speaker_id = int(speaker_id)
-        # wave, sr = torchaudio.load(wave_path)
-        # EMA = self.EMAdir[name]
-        # F0 = self.F0dir[name]
-        # energy = self.energydir[name]
-
         if wave.shape[0] == 2:
             wave = wave[0,:].squeeze()
         else:
             wave = wave.squeeze()
-        #wave = torch.cat([torch.zeros([5000]), wave, torch.zeros([5000])], axis=0)
+
         text = self.text_cleaner(text)
         text.insert(0, 0)
         text.append(0)
@@ -192,7 +172,7 @@ def build_dataloader(path_list,
                      dataset_config={},
                      Parallel = False):
 
-    dataset = FilePathDataset(path_list, validation=validation,  **dataset_config)
+    dataset = FilePathDataset(path_list, validation=validation,  dataset_config=dataset_config)
     collate_fn = Collater(**collate_config)
     if Parallel == True :
         train_sampler = DistributedSampler(dataset)

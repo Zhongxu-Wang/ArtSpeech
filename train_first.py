@@ -65,25 +65,27 @@ def main(config_path):
     device = config['device']
     epochs = config['epochs_1st']
     log_interval = config['log_interval']
+    data_path = config['data_path']
 
     # load data
-    train_list, val_list = get_data_path_list(train_path = "Data/Data.txt", val_path = config['val_data'])
+    train_list, val_list = get_data_path_list(train_path = config['train_data'], val_path = config['val_data'])
     train_dataloader = build_dataloader(train_list, batch_size=batch_size, num_workers=8,
-                                        dataset_config={}, device=device)
+                                        dataset_config={"data_path": data_path}, device=device)
     val_dataloader = build_dataloader(val_list, batch_size=batch_size, validation=True,
-                                      num_workers=2,  device=device, dataset_config={})
+                                      num_workers=2,  device=device, dataset_config={"data_path": data_path})
     
-    with open("../Data/predict/stats.json", "r") as f:
+    distribution = {}
+    with open(data_path+"predict/stats.json", "r") as f:
         data = json.load(f)
     [EMA_mean, EMA_std] = data["EMA"]
     [F0_mean, F0_std] = data["pitch"]
     [energy_mean, energy_std] = data["energy"]
-    EMA_mean = torch.tensor(EMA_mean).to("cuda")
-    EMA_std = torch.tensor(EMA_std).to("cuda")
-    F0_mean = torch.tensor(F0_mean).to("cuda")
-    F0_std = torch.tensor(F0_std).to("cuda")
-    energy_mean = torch.tensor(energy_mean).to("cuda")
-    energy_std = torch.tensor(energy_std).to("cuda")
+    distribution["EMA_mean"] = torch.tensor(EMA_mean).to("cuda")
+    distribution["EMA_std"] = torch.tensor(EMA_std).to("cuda")
+    distribution["F0_mean"] = torch.tensor(F0_mean).to("cuda")
+    distribution["F0_std"] = torch.tensor(F0_std).to("cuda")
+    distribution["energy_mean"] = torch.tensor(energy_mean).to("cuda")
+    distribution["energy_std"] = torch.tensor(energy_std).to("cuda")
 
 
     # load pretrained ASR model
@@ -104,7 +106,7 @@ def main(config_path):
         "epochs": epochs,
         "steps_per_epoch": len(train_dataloader)}
 
-    model = build_model(Munch(config['model_params']), text_aligner)
+    model = build_model(Munch(config['model_params']), text_aligner, distribution = distribution)
     _ = [model[key].to(device) for key in model]
 
     optimizer = build_optimizer({key: model[key].parameters() for key in model},
@@ -145,14 +147,14 @@ def main(config_path):
             batch = [b.to(device) for b in batch]
             texts, input_lengths, mels, mel_input_length, ema_gt, f0_gt, n_gt = batch
 
-            n_gt = (n_gt - energy_mean)/energy_std
-            f0_gt = (f0_gt-F0_mean)/F0_std
-            ema_gt = ((ema_gt.transpose(1, 2)-EMA_mean)/EMA_std).transpose(1, 2)
+            n_gt = (n_gt - distribution["energy_mean"])/distribution["energy_std"]
+            f0_gt = (f0_gt-distribution["F0_mean"])/distribution["F0_std"]
+            ema_gt = ((ema_gt.transpose(1, 2)-distribution["EMA_mean"])/distribution["EMA_std"]).transpose(1, 2)
             with autocast():
                 mask = length_to_mask(mel_input_length // (2 ** model.text_aligner.n_down)).to('cuda')
                 text_mask = length_to_mask(input_lengths).to(texts.device)
                 """Text Aligner"""
-                ppgs, s2s_pred, s2s_attn_feat = model.text_aligner(mels, mask, texts)
+                _, s2s_pred, s2s_attn_feat = model.text_aligner(mels, mask, texts)
                 s2s_attn_feat = s2s_attn_feat.transpose(-1, -2)
                 s2s_attn_feat = s2s_attn_feat[..., 1:]
                 s2s_attn_feat = s2s_attn_feat.transpose(-1, -2)

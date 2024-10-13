@@ -16,18 +16,6 @@ from Utils.RelTransformerEnc import RelTransformerEncoder
 from munch import Munch
 import yaml
 
-with open("../Data/predict/stats.json", "r") as f:
-    data = json.load(f)
-[EMA_mean, EMA_std] = data["EMA"]
-[F0_mean, F0_std] = data["pitch"]
-[energy_mean, energy_std] = data["energy"]
-EMA_mean = torch.tensor(EMA_mean).to("cuda")
-EMA_std = torch.tensor(EMA_std).to("cuda")
-F0_mean = torch.tensor(F0_mean).to("cuda")
-F0_std = torch.tensor(F0_std).to("cuda")
-energy_mean = torch.tensor(energy_mean).to("cuda")
-energy_std = torch.tensor(energy_std).to("cuda")
-
 class LearnedDownSample(nn.Module):
     def __init__(self, layer_type, dim_in):
         super().__init__()
@@ -285,7 +273,7 @@ class UpSample1d(nn.Module):
 =============================== Models ===============================
 """
 class ArtsSpeech(nn.Module):
-    def __init__(self, args, stage = "first"):
+    def __init__(self, args, stage = "first", distribution={}):
         super().__init__()
         if stage != "first":
             self.arts_encoder = RelTransformerEncoder(n_layers = 4, hidden_channels = args.hidden_dim)
@@ -296,16 +284,18 @@ class ArtsSpeech(nn.Module):
         self.style_encoder = StyleEncoder(dim_in=args.dim_in, style_dim=args.style_dim)
         self.decoder = Decoder(dec_dim=args.hidden_dim, style_dim=args.style_dim, dim_out=args.n_mels)
 
+        self.distribution = distribution
+
     def forward(self, batch, s2s_attn, s2s_attn_mono, step, mode = "train", epoch = 0):
-        texts, input_lengths, mels, mel_input_length = batch
-        if step == "first":
+        texts, input_lengths, mels, mel_input_length, _, _, _ = batch
+        if step == "first": 
             T_en = self.text_encoder(texts, input_lengths).transpose(1,2)
             if bool(random.getrandbits(1)) and mode == "train":
                 T_en = (T_en @ s2s_attn)
             else:
                 T_en = (T_en @ s2s_attn_mono)
 
-            F0s_ext, Ns_ext, EMAs_ext, Style = self.style_encoder(mels, mel_input_length, step, epoch)
+            F0s_ext, Ns_ext, EMAs_ext, Style = self.style_encoder(mels, mel_input_length, step, self.distribution, epoch)
             mel_len = int(mel_input_length.min().item() / 2 - 1)
             en = []
             f_list = []
@@ -327,7 +317,7 @@ class ArtsSpeech(nn.Module):
         elif step == "second":
             with torch.no_grad():
                 T_en = self.text_encoder(texts, input_lengths).transpose(1,2)
-            F0_real, N_real, EMA_real, Style = self.style_encoder(mels, mel_input_length, step)
+            F0_real, N_real, EMA_real, Style = self.style_encoder(mels, mel_input_length, self.distribution, step)
             A_en = self.arts_encoder(texts, input_lengths).transpose(1,2)
 
             T_en = T_en @ s2s_attn_mono
@@ -365,7 +355,7 @@ class ArtsSpeech(nn.Module):
         elif step == "test":
             T_en = self.text_encoder(texts, input_lengths).transpose(1,2)
             A_en = self.arts_encoder(texts, input_lengths).transpose(1,2)
-            F0s_ext, Ns_ext, EMAs_ext, Style = self.style_encoder(mels, mel_input_length, "second")
+            F0s_ext, Ns_ext, EMAs_ext, Style = self.style_encoder(mels, mel_input_length, self.distribution, "second")
             duration = self.durationPredictor(texts, EMAs_ext, input_lengths, mel_input_length)
             pred_dur = torch.round(duration.squeeze()).clamp(min=1)
             pred_aln_trg = torch.zeros(input_lengths, int(pred_dur.sum().data))
@@ -432,7 +422,7 @@ class StyleEncoder(nn.Module):
         Style = torch.cat((Mel_style, EMA_style, F0_style, energy_style),axis=1)
         return Style
 
-    def forward(self, mel, mel_input_length, step, epoch = 20):
+    def forward(self, mel, mel_input_length, step, distribution, epoch = 20):
         if step == "second" or (step == "first" and epoch<20):
             self.pitch_extractor.eval()
             self.ema_extractor.eval()
@@ -453,9 +443,9 @@ class StyleEncoder(nn.Module):
             self.ema_extractor.eval()
             with torch.no_grad():
                 ema_ext = self.ema_extractor(f0_ext, n_ext, mel)
-        n_ext = (n_ext - energy_mean)/energy_std
-        f0_ext = (f0_ext-F0_mean)/F0_std
-        ema_ext = ((ema_ext.transpose(1, 2)-EMA_mean)/EMA_std).transpose(1, 2)
+        n_ext = (n_ext - distribution["energy_mean"])/distribution["energy_std"]
+        f0_ext = (f0_ext - distribution["F0_mean"])/distribution["F0_std"]
+        ema_ext = ((ema_ext.transpose(1, 2)-distribution["EMA_mean"])/distribution["EMA_std"]).transpose(1, 2)
         #---
         # Style = []
         # for bib in range(len(mel_input_length)):
@@ -464,7 +454,6 @@ class StyleEncoder(nn.Module):
         #                         F0 = f0_ext[bib, :mel_input_length[bib]].unsqueeze(0),
         #                         Energy = n_ext[bib, :mel_input_length[bib]].unsqueeze(0)))
         # Style = torch.stack(Style).squeeze(1)
-    
         #---
         mel_len = int(mel_input_length.min().item()-1)
         f_list = []
@@ -687,8 +676,8 @@ def load_ASR_models(ASR_MODEL_PATH, ASR_MODEL_CONFIG):
 
     return asr_model
 
-def build_model(args, text_aligner, stage = "first"):
-    artsspeech = ArtsSpeech(args, stage)
+def build_model(args, text_aligner, stage = "first", distribution={}):
+    artsspeech = ArtsSpeech(args, stage, distribution=distribution)
     discriminator = Discriminator2d(dim_in=args.dim_in, num_domains=1, max_conv_dim=args.hidden_dim)
     return Munch(ArtsSpeech = artsspeech, discriminator = discriminator, text_aligner = text_aligner)
 

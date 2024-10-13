@@ -47,6 +47,7 @@ pip install torchaudio munch torch librosa pyyaml click tqdm attrdict matplotlib
 git clone https://github.com/resemble-ai/monotonic_align.git
 cd monotonic_align
 python setup.py install
+cd ..
 ```
 
 to be continued ......

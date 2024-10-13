@@ -59,7 +59,7 @@ to be continued ......
 
 ## Additional Training Data
 
-All results in the paper as well as the pre-trained models provided in the repository were trained using the LJSpeech and LibriTTS datasets.
-However, due to the lack of elderly, children, and emotionally rich data in these two datasets, the trained TTS models performed poorly on some data, so we expanded the datasets.
-Here we publish the multi-age, emotionally richer speech data we collected.
+All results in the paper, as well as the pre-trained models provided in the repository, were trained using the LJSpeech and LibriTTS datasets.
+
+Here we publish the multi-age, emotionally rich speech data we collected. I hope this will be useful for future research.
 

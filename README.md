@@ -52,16 +52,19 @@ cd ..
 
 ## Inference
 Before running the inference, make sure you have a reference audio file and the text you want to synthesize. 
-```python{.132}
+```python
 text = "XXXXX"
 ref_wav = "ref.wav"
 save_path = "output.wav"
 ```
+Execute the test script
 ```bash
 python test.py
 ```
 
 ## Training
+
+https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing
 
 to be continued ......
 

@@ -50,12 +50,20 @@ python setup.py install
 cd ..
 ```
 
-to be continued ......
-
 ## Inference
-
+Before running the inference, make sure you have a reference audio file and the text you want to synthesize. 
+```python{.132}
+text = "XXXXX"
+ref_wav = "ref.wav"
+save_path = "output.wav"
+```
+```bash
+python test.py
+```
 
 ## Training
+
+to be continued ......
 
 ## Additional Training Data
 

@@ -1,15 +1,10 @@
-import os
-import json
 import torch
-import numpy as np
 import torch.nn as nn
-import torch.nn.functional as F
-from .transformer import Encoder
 from torch.nn.utils import weight_norm
 from .conformer.conformer.encoder import ConformerBlock
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
 class Permute(nn.Module):
     def __init__(self, dim1, dim2):
         super(Permute, self).__init__()
@@ -23,6 +18,7 @@ class Permute(nn.Module):
 class EMA_Predictor(nn.Module):
     def __init__(self):
         super(EMA_Predictor, self).__init__()
+
         #encoder1
         self.encoder1 = nn.Sequential(
             nn.Linear(82,256),
@@ -30,7 +26,7 @@ class EMA_Predictor(nn.Module):
             nn.BatchNorm1d(256),
             Permute(1,2),
             nn.ReLU(),
-            nn.Dropout(p=0.1)
+            nn.Dropout(p=0.2)
         )
 
         self.decoder = nn.ModuleList([ConformerBlock(
@@ -38,12 +34,12 @@ class EMA_Predictor(nn.Module):
             num_attention_heads=4,
             feed_forward_expansion_factor=4,
             conv_expansion_factor=2,
-            feed_forward_dropout_p=0.05,
-            attention_dropout_p=0.05,
-            conv_dropout_p=0.05,
+            feed_forward_dropout_p=0.1,
+            attention_dropout_p=0.1,
+            conv_dropout_p=0.1,
             conv_kernel_size=31,
             half_step_residual=True,
-        ) for _ in range(5)])
+        ) for _ in range(3)])
         self.pool = weight_norm(nn.ConvTranspose1d(256, 256, kernel_size=3, stride=2, groups=256, padding=1, output_padding=1))
         self.decoder2 = nn.LSTM(input_size=256,hidden_size=256,num_layers=1,dropout=0,bidirectional =True)
 
@@ -56,7 +52,6 @@ class EMA_Predictor(nn.Module):
             # nn.Dropout(p=0.2),
             nn.Linear(128,10),
         )
-        
     def get_mask_from_lengths(self, lengths, max_len=None):
         batch_size = lengths.shape[0]
         if max_len is None:
@@ -73,10 +68,8 @@ class EMA_Predictor(nn.Module):
         src_lens, mel_lens ：   1*B
         texts：  max_src_len*B
         mels：  max_mel_len*80*B
-        max_src_len, max_mel_len：    1   表示当前batch最长的序列长度
+        max_src_len, max_mel_len：    1   
         """
-        #因为数据会自动补零对齐到最长的长度，所以要找出补零的位置：masks
-        #增广后的mask
 
         features = torch.cat((F0, energy, mels),1)
         dec_output = self.encoder1(features.transpose(1,2))

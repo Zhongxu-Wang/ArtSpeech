@@ -1,3 +1,4 @@
+import json
 import torch
 import numpy as np
 import torch.nn.functional as F
@@ -76,3 +77,12 @@ def get_image(arrs):
     ax.imshow(arrs)
 
     return fig
+
+def load_and_move_to_cuda(data_key, json_path):
+    with open(json_path, "r") as f:
+        data = json.load(f)
+    _, _, mean_val, std_val = data[data_key]
+    return {
+        f"{data_key}_mean": torch.tensor(mean_val).to("cuda"),
+        f"{data_key}_std": torch.tensor(std_val).to("cuda")
+    }

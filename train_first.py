@@ -17,16 +17,12 @@ from Vocoder.vocoder import Generator
 from torch.cuda.amp import autocast
 from torch.utils.tensorboard import SummaryWriter
 
-
 from optimizers import build_optimizer
 from meldataset import build_dataloader
 from monotonic_align import maximum_path
 from monotonic_align import mask_from_lens
 from models import load_ASR_models, build_model, load_checkpoint
-from utils import get_data_path_list, length_to_mask, adv_loss, r1_reg, get_image
-
-
-
+from utils import get_data_path_list, length_to_mask, adv_loss, r1_reg, get_image, load_and_move_to_cuda
 
 # simple fix for dataparallel that allows access to class attributes
 class MyDataParallel(torch.nn.DataParallel):
@@ -61,12 +57,12 @@ def main(config_path):
     logger.addHandler(file_handler)
 
     # load config
+    stats_path = config['stats_path']
     batch_size = config['batch_size']
     device = config['device']
     epochs = config['epochs_1st']
     log_interval = config['log_interval']
     data_path = config['data_path']
-
     # load data
     train_list, val_list = get_data_path_list(train_path = config['train_data'], val_path = config['val_data'])
     train_dataloader = build_dataloader(train_list, batch_size=batch_size, num_workers=8,
@@ -74,19 +70,11 @@ def main(config_path):
     val_dataloader = build_dataloader(val_list, batch_size=batch_size, validation=True,
                                       num_workers=2,  device=device, dataset_config={"data_path": data_path})
     
-    distribution = {}
-    with open(data_path+"predict/stats.json", "r") as f:
-        data = json.load(f)
-    [EMA_mean, EMA_std] = data["EMA"]
-    [F0_mean, F0_std] = data["pitch"]
-    [energy_mean, energy_std] = data["energy"]
-    distribution["EMA_mean"] = torch.tensor(EMA_mean).to("cuda")
-    distribution["EMA_std"] = torch.tensor(EMA_std).to("cuda")
-    distribution["F0_mean"] = torch.tensor(F0_mean).to("cuda")
-    distribution["F0_std"] = torch.tensor(F0_std).to("cuda")
-    distribution["energy_mean"] = torch.tensor(energy_mean).to("cuda")
-    distribution["energy_std"] = torch.tensor(energy_std).to("cuda")
-
+    distribution = {
+        **load_and_move_to_cuda("EMA", stats_path),
+        **load_and_move_to_cuda("pitch", stats_path),
+        **load_and_move_to_cuda("energy", stats_path)
+    }
 
     # load pretrained ASR model
     text_aligner = load_ASR_models(config['ASR_path'],config['ASR_config'])
@@ -148,7 +136,7 @@ def main(config_path):
             texts, input_lengths, mels, mel_input_length, ema_gt, f0_gt, n_gt = batch
 
             n_gt = (n_gt - distribution["energy_mean"])/distribution["energy_std"]
-            f0_gt = (f0_gt-distribution["F0_mean"])/distribution["F0_std"]
+            f0_gt = (f0_gt-distribution["pitch_mean"])/distribution["pitch_std"]
             ema_gt = ((ema_gt.transpose(1, 2)-distribution["EMA_mean"])/distribution["EMA_std"]).transpose(1, 2)
             with autocast():
                 mask = length_to_mask(mel_input_length // (2 ** model.text_aligner.n_down)).to('cuda')

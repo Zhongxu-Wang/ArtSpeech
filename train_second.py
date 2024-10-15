@@ -24,18 +24,6 @@ from monotonic_align import mask_from_lens
 from models import load_ASR_models, build_model, load_checkpoint
 from Vocoder.vocoder import Generator
 
-# for data augmentation
-class TimeStrech(nn.Module):
-    def __init__(self, scale):
-        super(TimeStrech, self).__init__()
-        self.scale = scale
-
-    def forward(self, x):
-        mel_size = x.size(-1)
-        x = F.interpolate(x, scale_factor=(1, self.scale), align_corners=False,
-                          recompute_scale_factor=True, mode='bilinear').squeeze()
-        return x.unsqueeze(1)
-
 # simple fix for dataparallel that allows access to class attributes
 class MyDataParallel(torch.nn.DataParallel):
     def __getattr__(self, name):
@@ -72,13 +60,13 @@ def main(config_path):
     batch_size = config.get('batch_size', 10)
     device = config.get('device', 'cpu')
     epochs = config.get('epochs_2nd', 100)
-    save_freq = config.get('save_freq', 2)
     train_path = config.get('train_data', None)
     val_path = config.get('val_data', None)
     multigpu = config.get('multigpu', False)
     log_interval = config.get('log_interval', 10)
     saving_epoch = config.get('save_freq', 2)
-
+    data_path = config['data_path']
+    stats_path = config['stats_path']
     # load data
     train_list, val_list = get_data_path_list(train_path, val_path)
 
@@ -87,7 +75,7 @@ def main(config_path):
                                       validation=True,
                                       num_workers=2,
                                       device=device,
-                                      dataset_config={})
+                                      dataset_config={"data_path": data_path})
     # load pretrained ASR model
     text_aligner = load_ASR_models(config['ASR_path'],config['ASR_config'])
 
@@ -105,7 +93,13 @@ def main(config_path):
         "pct_start": float(config['optimizer_params'].get('pct_start', 0.0)),
         "epochs": epochs,}
 
-    model = build_model(Munch(config['model_params']), text_aligner, stage = "second")
+    distribution = {
+        **load_and_move_to_cuda("EMA", stats_path),
+        **load_and_move_to_cuda("pitch", stats_path),
+        **load_and_move_to_cuda("energy", stats_path)
+    }
+
+    model = build_model(Munch(config['model_params']), text_aligner, stage = "second", distribution= distribution)
 
     _ = [model[key].to(device) for key in model]
 
@@ -117,7 +111,7 @@ def main(config_path):
         for key in model:
             model[key] = MyDataParallel(model[key])
 
-    if config.get('pretrained_model', '') != '' and config.get('second_stage_load_pretrained', False):
+    if config.get('pretrained_model', '') != '':
         model, optimizer, start_epoch, iters = load_checkpoint(model,  optimizer, config['pretrained_model'],
                                     load_only_params=config.get('load_only_params', True))
     else:
@@ -136,10 +130,12 @@ def main(config_path):
 
     loss_params = Munch(config['loss_params'])
     for epoch in range(start_epoch, epochs):
-        train_dataloader = build_dataloader2(train_list,
+
+        # If the data set is too large, you can use the subset of train_list
+        train_dataloader = build_dataloader(train_list,
                                     batch_size=batch_size,
                                     num_workers=6,
-                                    dataset_config={},
+                                    dataset_config={"data_path": data_path},
                                     device=device)
         running_loss = 0
         criterion = nn.L1Loss()
@@ -150,7 +146,7 @@ def main(config_path):
         inner_bar = tqdm(total=len(train_dataloader), desc="Epoch {}".format(epoch), position=1)
         for i, batch in enumerate(train_dataloader):
             batch = [b.to(device) for b in batch]
-            texts, input_lengths, mels, mel_input_length = batch
+            texts, input_lengths, mels, mel_input_length, _, _, _ = batch
             mask = length_to_mask(mel_input_length // (2 ** model.text_aligner.n_down)).to('cuda')
             text_mask = length_to_mask(input_lengths).to(texts.device)
 

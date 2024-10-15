@@ -1,4 +1,10 @@
+#coding:utf-8
+import os, sys
+import os.path as osp
+import numpy as np
 import torch
+from torch import nn
+from torch.optim import Optimizer
 from functools import reduce
 from torch.optim import AdamW
 
@@ -8,6 +14,7 @@ class MultiOptimizer:
         self.schedulers = schedulers
         self.keys = list(optimizers.keys())
         self.param_groups = reduce(lambda x,y: x+y, [v.param_groups for v in self.optimizers.values()])
+
 
     def state_dict(self):
         state_dicts = [(key, self.optimizers[key].state_dict())\
@@ -53,12 +60,13 @@ class MultiOptimizer:
 def define_scheduler(optimizer, params):
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=params.get('max_lr', 1e-4),
+        max_lr=params.get('max_lr', 2e-4),
         epochs=params.get('epochs', 200),
-        steps_per_epoch=params.get('steps_per_epoch', 1615),
+        steps_per_epoch=params.get('steps_per_epoch', 1000),
         pct_start=params.get('pct_start', 0.0),
         div_factor=1,
         final_div_factor=5)
+
     return scheduler
 
 def build_optimizer(parameters_dict, scheduler_params_dict):

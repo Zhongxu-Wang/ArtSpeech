@@ -56,9 +56,6 @@ class FilePathDataset(torch.utils.data.Dataset):
                  sr=24000,
                  ):
 
-        spect_params = SPECT_PARAMS
-        mel_params = MEL_PARAMS
-
         _data_list = [l[:-1].split('|') for l in data_list]
         self.data_list = [data if len(data) == 3 else (*data, 0) for data in _data_list]
         self.text_cleaner = TextCleaner()
@@ -87,7 +84,6 @@ class FilePathDataset(torch.utils.data.Dataset):
 
     def getitem(self, idx):
         data = self.data_list[idx]
-        path = data[0]
         wave, _, speaker_id, _, _, _ = self._load_tensor(data)
         mel_tensor = preprocess(wave).squeeze()
         return speaker_id, mel_tensor

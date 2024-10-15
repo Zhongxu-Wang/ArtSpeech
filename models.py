@@ -1,9 +1,9 @@
 #coding:utf-8
 import math
-import time
-import json
+import yaml
 import random
 import numpy as np
+from munch import Munch
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,8 +13,8 @@ from Utils.ASR.models import ASRCNN
 from Utils.JDC.model import JDCNet
 from Utils.EMA.EMA_Predictor import EMA_Predictor
 from Utils.RelTransformerEnc import RelTransformerEncoder
-from munch import Munch
-import yaml
+
+
 
 class LearnedDownSample(nn.Module):
     def __init__(self, layer_type, dim_in):
@@ -317,7 +317,7 @@ class ArtsSpeech(nn.Module):
         elif step == "second":
             with torch.no_grad():
                 T_en = self.text_encoder(texts, input_lengths).transpose(1,2)
-            F0_real, N_real, EMA_real, Style = self.style_encoder(mels, mel_input_length, self.distribution, step)
+            F0_real, N_real, EMA_real, Style = self.style_encoder(mels, mel_input_length, step, self.distribution)
             A_en = self.arts_encoder(texts, input_lengths).transpose(1,2)
 
             T_en = T_en @ s2s_attn_mono
@@ -352,10 +352,11 @@ class ArtsSpeech(nn.Module):
                     [EMA_fake, EMA_real.detach()],
                     [N_fake, N_real.detach()],
                     duration_fake)
+        
         elif step == "test":
             T_en = self.text_encoder(texts, input_lengths).transpose(1,2)
             A_en = self.arts_encoder(texts, input_lengths).transpose(1,2)
-            F0s_ext, Ns_ext, EMAs_ext, Style = self.style_encoder(mels, mel_input_length, self.distribution, "second")
+            F0s_ext, Ns_ext, EMAs_ext, Style = self.style_encoder(mels, mel_input_length, "second", self.distribution)
             duration = self.durationPredictor(texts, EMAs_ext, input_lengths, mel_input_length)
             pred_dur = torch.round(duration.squeeze()).clamp(min=1)
             pred_aln_trg = torch.zeros(input_lengths, int(pred_dur.sum().data))
@@ -378,7 +379,7 @@ class StyleEncoder(nn.Module):
         self.pitch_extractor.load_state_dict(params)
    
         self.ema_extractor = EMA_Predictor().to("cuda")
-        params = torch.load("Utils/EMA/300000.pth.tar", map_location='cuda')['model']
+        params = torch.load("Utils/EMA/200000.pth.tar", map_location='cuda')['model']
         self.ema_extractor.load_state_dict(params)
 
         self.Mel_block = nn.Sequential(spectral_norm(nn.Conv2d(1, dim_in, 3, 1, 1)),
@@ -444,7 +445,7 @@ class StyleEncoder(nn.Module):
             with torch.no_grad():
                 ema_ext = self.ema_extractor(f0_ext, n_ext, mel)
         n_ext = (n_ext - distribution["energy_mean"])/distribution["energy_std"]
-        f0_ext = (f0_ext - distribution["F0_mean"])/distribution["F0_std"]
+        f0_ext = (f0_ext - distribution["pitch_mean"])/distribution["pitch_std"]
         ema_ext = ((ema_ext.transpose(1, 2)-distribution["EMA_mean"])/distribution["EMA_std"]).transpose(1, 2)
         #---
         # Style = []

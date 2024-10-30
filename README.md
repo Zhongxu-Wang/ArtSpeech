@@ -51,6 +51,11 @@ cd ..
 ```
 
 ## Inference
+
+Download the pre-training weights:
+https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing
+
+
 Before running the inference, make sure you have a reference audio file and the text you want to synthesize. 
 ```python
 text = "XXXXX"
@@ -63,8 +68,6 @@ python test.py
 ```
 
 ## Training
-
-https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing
 
 to be continued ......
 

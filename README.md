@@ -52,9 +52,7 @@ cd ..
 
 ## Inference
 
-Download the pre-training weight and put it in the "Outputs/LibriTTS/":
-https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing
-<a href="https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing" target="_blank">LibriTTS pre-training weight</a>
+Download the pre-training weight and put it in the "Outputs/LibriTTS/": <a href="https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing" target="_blank">LibriTTS pre-training weight</a>
 
 Before running the inference, make sure you have a reference audio file and the text you want to synthesize. 
 ```python

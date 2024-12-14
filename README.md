@@ -67,7 +67,7 @@ python test.py
 
 ## Training
 
-I am busy looking for a job recently, and when everything settles down, I will sort out the code, as well as the training code for speech synthesis and the code for TVs module...
+to be continued
 
 ## Additional Training Data
 

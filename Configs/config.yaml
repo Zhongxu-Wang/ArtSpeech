@@ -9,7 +9,7 @@ epochs_2nd: 120 # number of peochs for second stage training
 batch_size: 1
 pretrained_model: "Outputs/LibriTTS/epoch_2nd_00119.pth"
 load_only_params: false 
-
+MAS_type: "legacy"
 
 train_data: "Data/train_list_libritts_20.txt"
 val_data: "Data/val_list_libritts.txt"

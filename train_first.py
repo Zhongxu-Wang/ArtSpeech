@@ -49,9 +49,12 @@ def main(config_path):
     config = yaml.safe_load(open(config_path))
     MAS_type = config['MAS_type']
     global maximum_path, mask_from_lens
-    if MAS_type == 'v1':  # Cython-free super-monotonic-align-v1 (https://github.com/supertone-inc/super-monotonic-align)
+    if MAS_type == 'v1' or MAS_type == 'v2':  # JIT based super-monotonic-align (https://github.com/supertone-inc/super-monotonic-align)
         import S_monotonic_align
-        maximum_path = S_monotonic_align.maximum_path1  # I/O : [batch_size=B, text_length=T, audio_length=S]
+        if MAS_type == 'v1':  # v1
+            maximum_path = S_monotonic_align.maximum_path1  # I/O : [batch_size=B, text_length=T, audio_length=S]
+        else: # v2
+            maximum_path = S_monotonic_align.maximum_path2  # same as above
         mask_from_lens = S_monotonic_align.mask_from_lens
     elif MAS_type == 'triton':  # super-monotonic-align-triton (needs triton)
         import S_monotonic_align_Triton

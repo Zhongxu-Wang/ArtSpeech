@@ -74,3 +74,6 @@ to be continued
 All results in the paper, as well as the pre-trained models provided in the repository, were trained using the LJSpeech and LibriTTS datasets.
 
 Here we publish the multi-age, emotionally rich speech data we collected. I hope this will be useful for future research.
+
+### Multi-age dataset
+<a href="https://drive.google.com/drive/folders/1XlCWqwI1tCL8Xhd-tpjeRAv4Pm7WnzJL?usp=drive_link" target="_blank">Multi-age dataset</a>

@@ -77,3 +77,4 @@ Here we publish the multi-age, emotionally rich speech data we collected. I hope
 
 ### Multi-age dataset
 <a href="https://drive.google.com/drive/folders/1XlCWqwI1tCL8Xhd-tpjeRAv4Pm7WnzJL?usp=drive_link" target="_blank">Multi-age dataset</a>
+The Multi-Age Dataset consists of 36 children's videos and 15 elderly videos sourced from YouTube.  The corresponding audio has been transcribed through Automatic Speech Recognition (ASR), segmented, and manually verified.  The dataset contains a total of 4,695 spoken sentences.

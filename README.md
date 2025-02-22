@@ -73,7 +73,7 @@ python test.py
 Create a new folder: `Data/LibriTTS/train-clean-460/`
 Download the `train-clean-100.tar.gz` and `train-clean-360.tar.gz` datasets from <a href="https://www.openslr.org/60/" target="_blank">LibriTTS</a>, merge them, and place them in the `train-clean-460` directory.
 
-Download the articulatory features gt `predict` file and place it in the `Data/` directory. The predict file contains the articulatory features GT for the LibriTTS, LJSpeech, and VITS datasets. If you want to train on your own dataset, please refer to this project: <a href="https://github.com/Zhongxu-Wang/TVsExtractor" target="_blank">TVsExtractor</a>.
+Download the articulatory features gt `predict` file and place it in the `Data/` directory. The predict file contains the articulatory features GT for the LibriTTS, LJSpeech, and VCTK datasets. If you want to train on your own dataset, please refer to this project: <a href="https://github.com/Zhongxu-Wang/TVsExtractor" target="_blank">TVsExtractor</a>.
 
 ### Train the Model
 

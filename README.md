@@ -52,7 +52,9 @@ cd ..
 
 ## Inference
 
-Download the pre-training weight and put it in the "Outputs/LibriTTS/": <a href="https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing" target="_blank">LibriTTS pre-training weight</a>
+Download the pre-training weight and put it in the `Outputs/LibriTTS/`: <a href="https://drive.google.com/file/d/1_c07vqqd_102e2y73v5jTGJbptcukRCh/view?usp=sharing" target="_blank">LibriTTS pre-training weight</a>
+
+Set `pretrained_model` in `Configs\config.yaml` to `"Outputs/LibriTTS/epoch_2nd_00119.pth"`
 
 Before running the inference, make sure you have a reference audio file and the text you want to synthesize. 
 ```python
@@ -66,9 +68,20 @@ python test.py
 ```
 
 ## Training
+### Dataset Preparation
 
-to be continued
+Create a new folder: `Data/LibriTTS/train-clean-460/`
+Download the `train-clean-100.tar.gz` and `train-clean-360.tar.gz` datasets from <a href="https://www.openslr.org/60/" target="_blank">LibriTTS</a>, merge them, and place them in the `train-clean-460` directory.
 
+Download the articulatory features gt `predict` file and place it in the `Data/` directory. The predict file contains the articulatory features GT for the LibriTTS, LJSpeech, and VITS datasets. If you want to train on your own dataset, please refer to this project: <a href="https://github.com/Zhongxu-Wang/TVsExtractor" target="_blank">TVsExtractor</a>.
+
+### Train the Model
+
+Run the following commands:
+```bash
+python train_first.py
+python train_second.py
+```
 ## Additional Training Data
 
 All results in the paper, as well as the pre-trained models provided in the repository, were trained using the LJSpeech and LibriTTS datasets.

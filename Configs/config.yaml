@@ -6,8 +6,8 @@ device: "cuda"
 multigpu: false
 epochs_1st: 120 # number of epochs for first stage training
 epochs_2nd: 120 # number of peochs for second stage training
-batch_size: 1
-pretrained_model: "Outputs/LibriTTS/epoch_2nd_00119.pth"
+batch_size: 64
+pretrained_model: "" #"Outputs/LibriTTS/epoch_2nd_00119.pth"
 load_only_params: false 
 
 

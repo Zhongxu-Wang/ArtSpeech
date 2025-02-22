@@ -19,8 +19,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from optimizers import build_optimizer
 from meldataset import build_dataloader
-from monotonic_align import maximum_path
-from monotonic_align import mask_from_lens
+#from monotonic_align import maximum_path
+#from monotonic_align import mask_from_lens
 from models import load_ASR_models, build_model, load_checkpoint
 from utils import get_data_path_list, length_to_mask, adv_loss, r1_reg, get_image, load_and_move_to_cuda
 
@@ -31,6 +31,7 @@ class MyDataParallel(torch.nn.DataParallel):
             return super().__getattr__(name)
         except AttributeError:
             return getattr(self.module, name)
+
 import logging
 from logging import StreamHandler
 
@@ -46,6 +47,24 @@ def main(config_path):
 
     train_step = "first"
     config = yaml.safe_load(open(config_path))
+    MAS_type = config['MAS_type']
+    global maximum_path, mask_from_lens
+    if MAS_type == 'v1' or MAS_type == 'v2':  # JIT based super-monotonic-align (https://github.com/supertone-inc/super-monotonic-align)
+        import S_monotonic_align
+        if MAS_type == 'v1':  # v1
+            maximum_path = S_monotonic_align.maximum_path1  # I/O : [batch_size=B, text_length=T, audio_length=S]
+        else: # v2
+            maximum_path = S_monotonic_align.maximum_path2  # same as above
+        mask_from_lens = S_monotonic_align.mask_from_lens
+    elif MAS_type == 'triton':  # super-monotonic-align-triton (needs triton)
+        import S_monotonic_align_Triton
+        maximum_path = S_monotonic_align_Triton.maximum_path  # same as above
+        mask_from_lens = S_monotonic_align_Triton.mask_from_lens
+    elif MAS_type == 'legacy':  # the previous one (https://github.com/resemble-ai/monotonic_align)
+        import monotonic_align
+        maximum_path = monotonic_align.maximum_path  # I/O : [batch_size=B, symbol_len=S, mel_lens=T] (reversed symbols, but it is the same anyway)
+        mask_from_lens = monotonic_align.mask_from_lens
+
     log_dir = config['log_dir']
     if not osp.exists(log_dir): os.makedirs(log_dir, exist_ok=True)
     shutil.copy(config_path, osp.join(log_dir, osp.basename(config_path)))

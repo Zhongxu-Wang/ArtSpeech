@@ -25,11 +25,12 @@ Paper Link: <a href="https://dl.acm.org/doi/10.1145/3664647.3681097" target="_bl
 
 ## Pre-requisites
 
-1. Python >= 3.8
+1. Python >= 3.8  
 ```bash
 conda create -n ArtSpeech python==3.8.0
 conda activate ArtSpeech
 ```
+(Some code adjustments might be necessary when using the latest versions of Python and PyTorch.)
 
 2. Clone this repository:
 ```bash
@@ -41,14 +42,6 @@ cd ArtSpeech
 ```bash
 pip install torchaudio munch torch librosa pyyaml click tqdm attrdict matplotlib tensorboard Cython
 ``` 
-
-4. Build Monotonic Alignment Search.
-```bash
-git clone https://github.com/resemble-ai/monotonic_align.git
-cd monotonic_align
-python setup.py install
-cd ..
-```
 
 ## Inference
 

@@ -131,7 +131,6 @@ def main(config_path):
         model, optimizer, start_epoch, iters = load_checkpoint(model,  optimizer, config['pretrained_model'],
                                     load_only_params=config.get('load_only_params', True))
         print("loading")
-        start_epoch = 21
     else:
         start_epoch = 0
         iters = 0

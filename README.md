@@ -68,6 +68,7 @@ Download the `train-clean-100.tar.gz` and `train-clean-360.tar.gz` datasets from
 
 Download the articulatory features gt <a href="https://drive.google.com/file/d/1aVO9EKqgL7CQ7bYbNmBn-xs7EgZQD0cP/view?usp=drive_link" target="_blank"> predict </a> file and place it in the `Data/` directory. The predict file contains the articulatory features GT for the LibriTTS, LJSpeech, and VCTK datasets. If you want to train on your own dataset, please refer to this project: <a href="https://github.com/Zhongxu-Wang/TVsExtractor" target="_blank">TVsExtractor</a>.
 
+Run data_preprocessor.py to generate the stats.json file.     
 ### Train the Model
 
 Run the following commands:
